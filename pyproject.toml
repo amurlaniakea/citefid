@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "citefid"
+version = "0.1.0"
+description = "Verificador de fidelidad de citas para wikis OKF"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "AGPL-3.0-or-later" }
+authors = [{ name = "Pedro Sordo Martínez", email = "amurlaniakea@gmail.com" }]
+dependencies = [
+    "sentence-transformers",
+    "scikit-learn",
+    "requests",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "slow: tests that hit network or external APIs (skip without credentials)",
+]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "W"]

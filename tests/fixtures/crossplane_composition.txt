@@ -1,0 +1,1 @@
+A Composition specifies a set of managed resources that Crossplane should create and keep in the desired state. Compositions are reusable templates that define how a Claim or Composite Resource maps to a set of managed resources.

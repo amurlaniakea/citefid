@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+.hermes/
+.gnupg/
+.aws/
+credentials/
+*.egg-info/
+.pytest_cache/
+*.log
+out_test/
+spike/
