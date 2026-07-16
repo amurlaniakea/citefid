@@ -30,7 +30,7 @@ from __future__ import annotations
 
 import json
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional
 
@@ -64,14 +64,19 @@ def _load_llm_api_key() -> Optional[str]:
 
 @dataclass
 class JudgeResult:
-    """Veredicto estructurado del juez (AC-6.1)."""
+    """Veredicto estructurado del juez (AC-6.1).
+
+    `per_ev` lleva el veredicto por cada evidencia (igual que Verdict.per_ev en
+    verify.py) para trazabilidad: se ve qué pasaje dijo qué.
+    """
 
     verdict: str  # "confirm" | "refute" | "unknown"
     reason: str
     raw: Optional[str] = None  # respuesta cruda del modelo, si la hubo
+    per_ev: list = field(default_factory=list)  # [{span_idx, verdict, reason}]
 
     def to_dict(self) -> dict:
-        return {"verdict": self.verdict, "reason": self.reason}
+        return {"verdict": self.verdict, "reason": self.reason, "per_ev": self.per_ev}
 
 
 _PROMPT = """Eres un verificador de fidelidad de citas. Dado un claim y el \
@@ -91,10 +96,14 @@ __SPAN__
 def judge_claim(
     claim: Claim, evidences: List[Evidence], api_key: Optional[str] = None
 ) -> JudgeResult:
-    """Aplica LLM-as-judge al claim sobre sus evidencias resueltas.
+    """Aplica LLM-as-judge al claim sobre TODAS sus evidencias resueltas.
 
-    Sin api_key (o sin credencial en el store) → degrada a 'sin juez'
-    (AC-6.4): devuelve unknown con razón documentada, sin llamar a red.
+    Replica el principio de verify_claim (DESIGN_NOTES p13): N evidencias desde
+    el inicio, no afterthought. Recupera el pasaje de CADA evidencia con span,
+    pide un veredicto por cada una, y agrega: un solo `refute` basta para
+    refutar (la fuente que contradice pesa sobre N que confirman), igual que en
+    NLI donde `contra` descuenta. Sin api_key (o sin credencial) → degrada a
+    'sin juez' (AC-6.4): unknown con razón documentada, sin llamar a red.
     """
     key = api_key or _load_llm_api_key()
     if not key:
@@ -103,17 +112,36 @@ def judge_claim(
             reason="sin juez (sin API key de LLM configurada; NLI sigue vigente)",
         )
 
-    # Recupera el pasaje relevante del primer span resuelto (mismo que verify).
-    spans = [e.span for e in evidences if e.span]
+    # Recupera el pasaje de CADA evidencia con span (no solo la primera).
+    spans = [(i, e.span) for i, e in enumerate(evidences) if e.span]
     if not spans:
         return JudgeResult(verdict="unknown", reason="sin juez (ninguna evidencia resuelta)")
-    passage = retrieve_passage(claim.text, spans[0])
 
-    # NOTA: la llamada real al proveedor se hace aquí. Sin proveedor
-    # instalado/hardcodeado, este punto es donde se invocaría la API. El
-    # shape de salida es el JSON del _PROMPT; se parsea abajo.
-    raw = _call_llm(_PROMPT.replace("__CLAIM__", claim.text).replace("__SPAN__", passage), key)
-    return _parse_judge(raw)
+    per_ev: list = []
+    any_refute = any_confirm = False
+    for idx, span in spans:
+        passage = retrieve_passage(claim.text, span)
+        raw = _call_llm(
+            _PROMPT.replace("__CLAIM__", claim.text).replace("__SPAN__", passage), key
+        )
+        jr = _parse_judge(raw)
+        per_ev.append({"span_idx": idx, "verdict": jr.verdict, "reason": jr.reason})
+        if jr.verdict == "refute":
+            any_refute = True
+        elif jr.verdict == "confirm":
+            any_confirm = True
+
+    # Agregación: refute gana (coherente con verify_claim: contra pesa).
+    if any_refute:
+        verdict = "refute"
+        reason = "al menos una evidencia contradice el claim"
+    elif any_confirm:
+        verdict = "confirm"
+        reason = "ninguna evidencia contradice; al menos una confirma"
+    else:
+        verdict = "unknown"
+        reason = "todas las evidencias quedaron en unknown"
+    return JudgeResult(verdict=verdict, reason=reason, per_ev=per_ev)
 
 
 def _call_llm(prompt: str, api_key: str) -> str:

@@ -74,7 +74,8 @@ def test_ac64_no_llm_client_fallback(monkeypatch):
     claim = _claim_fixture()
     jr = judge_claim(claim, claim.evidences)
     assert jr.verdict == "unknown"
-    assert "cliente LLM no instalado" in jr.reason
+    # El fallback se propagó al menos en una evidencia (no crash, degradó).
+    assert any("cliente LLM no instalado" in e["reason"] for e in jr.per_ev)
 
 
 @pytest.mark.skip(
@@ -92,3 +93,32 @@ def test_ac62_judge_beats_nli_on_code():
 def test_ac63_numeric_gray_zone():
     """AC-6.3: detecta cambio de cifra cuando la fuente lo contiene."""
     raise NotImplementedError("pendiente de API key de LLM")
+
+
+def test_multi_evidence_aggregates_all(monkeypatch):
+    """Regression del bug hallado en auditoría: judge_claim NO usa solo la
+    primera evidencia. Con 2 evidencias (primera unknown, segunda refute),
+    el veredicto agregado debe ser 'refute' (refute gana, como verify_claim)."""
+
+    calls = {"n": 0}
+
+    def fake_call(prompt, key):
+        calls["n"] += 1
+        # Primera evidencia (índice 0) -> unknown; segunda (índice 1) -> refute.
+        if calls["n"] == 1:
+            return '{"verdict": "unknown", "reason": "no menciona"}'
+        return '{"verdict": "refute", "reason": "la fuente dice lo contrario"}'
+
+    monkeypatch.setattr("src.citefid.judge._load_llm_api_key", lambda: "dummy-key")
+    monkeypatch.setattr("src.citefid.judge._call_llm", fake_call)
+
+    span = (FIX / "crossplane_composition.txt").read_text()
+    ev0 = Evidence(raw="ev0", span=span)
+    ev1 = Evidence(raw="ev1", span="texto que contradice al claim explícitamente")
+    claim = Claim(text="Crossplane compone recursos.", evidences=[ev0, ev1])
+
+    jr = judge_claim(claim, claim.evidences)
+    assert jr.verdict == "refute"
+    assert len(jr.per_ev) == 2  # recorrió AMBAS, no solo la primera
+    assert jr.per_ev[0]["verdict"] == "unknown"
+    assert jr.per_ev[1]["verdict"] == "refute"
