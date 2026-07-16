@@ -27,6 +27,12 @@ jobs:
           GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
       - name: Tests
         run: pytest --cov=src/citefid --cov-report=xml -q
+      - name: Upload coverage
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
+        with:
+          name: coverage
+          path: coverage.xml
+          if-no-files-found: error
       - name: SAST (bandit -> JSON)
         run: bandit -r src -f json -o bandit.json --exit-zero
       - name: bandit JSON -> SARIF
@@ -44,9 +50,15 @@ jobs:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # v5.0.0
         with:
           fetch-depth: 0
+      - name: Download coverage
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4
+        with:
+          name: coverage
       - name: SonarCloud Scan
         if: ${{ env.SONAR_TOKEN != '' }}
         uses: SonarSource/sonarcloud-github-action@master
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: -Dsonar.python.coverage.reportPaths=coverage.xml
