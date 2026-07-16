@@ -98,12 +98,19 @@ def judge_claim(
 ) -> JudgeResult:
     """Aplica LLM-as-judge al claim sobre TODAS sus evidencias resueltas.
 
-    Replica el principio de verify_claim (DESIGN_NOTES p13): N evidencias desde
-    el inicio, no afterthought. Recupera el pasaje de CADA evidencia con span,
-    pide un veredicto por cada una, y agrega: un solo `refute` basta para
-    refutar (la fuente que contradice pesa sobre N que confirman), igual que en
-    NLI donde `contra` descuenta. Sin api_key (o sin credencial) → degrada a
-    'sin juez' (AC-6.4): unknown con razón documentada, sin llamar a red.
+    Recorre N evidencias desde el inicio (DESIGN_NOTES p13): recupera el pasaje
+    de CADA evidencia con span, pide un veredicto por cada una, y agrega.
+
+    AGREGACIÓN DELIBERADAMENTE MÁS CONSERVADORA QUE verify_claim (no "coherente"):
+    - verify_claim (NLI) se queda con la MEJOR evidencia: support = max_i(entail_i − contra_i).
+      Una evidencia que apoya fuerte hace confirm aunque otra contradiga poco.
+    - judge_claim (LLM) se queda con la PEOR: si CUALQUIER evidencia dice refute,
+      el veredicto es refute, aunque el resto confirme.
+    Criterio distinto a propósito: el juez LLM se invoca en la zona gris / casos
+    dudosos donde NLI rinde mal; en esos casos una sola contradicción merece más
+    peso que confirmar por mayoría. No es "max(support)" — es "refute wins".
+    Sin api_key (o sin credencial) → degrada a 'sin juez' (AC-6.4): unknown con
+    razón documentada, sin llamar a red.
     """
     key = api_key or _load_llm_api_key()
     if not key:
@@ -131,7 +138,8 @@ def judge_claim(
         elif jr.verdict == "confirm":
             any_confirm = True
 
-    # Agregación: refute gana (coherente con verify_claim: contra pesa).
+    # Agregación: refute gana (conservadora, opuesta a verify_claim que usa
+    # max(support); ver DESIGN_NOTES p15 — decisión deliberada, no coherencia).
     if any_refute:
         verdict = "refute"
         reason = "al menos una evidencia contradice el claim"
