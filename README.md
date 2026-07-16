@@ -63,6 +63,21 @@ real (crossplane), con spans recortados a rango de líneas curado:
 
 Detalles completos de la investigación en [RESEARCH.md](RESEARCH.md).
 
+## LLM-as-judge (Fase 2, parcial)
+
+`judge.py` aplica un LLM como juez sobre el pasaje recuperado cuando NLI-small
+rinde mal (código/CRD) o en zona gris numérica (cambios de cifra que la fuente
+no contiene). Emite veredicto estructurado `confirm/refute/unknown + razón`.
+
+- **Sin API key:** degrada a `unknown` ("sin juez") y NO falla (AC-6.4). NLI
+  sigue siendo la regla vigente. La key se lee del credentials store
+  (`~/.hermes/credentials/platforms.json`, proveedores `cloudfence`/`openai`/
+  `anthropic`), nunca hardcodeada.
+- **Pendiente de API key:** los AC-6.2 (mejora sobre NLI en código/CRD) y
+  AC-6.3 (detección de num_bump en zona gris) requieren una credencial de LLM
+  real para medirse. Hasta tenerla, quedan como `skip` explícito en los tests
+  — **no se afirma mejora sobre NLI sin haberla medido**.
+
 ## Instalación
 
 ```bash
