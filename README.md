@@ -94,7 +94,30 @@ print(verdict.veredict, verdict.support, verdict.best_ev)
 pytest            # 17 tests
 ```
 
+## Reproducibilidad del AUC
+
+El AUC citado arriba (0.7029 sobre `span[:1500]`, 0.7219 sobre pasaje
+recuperado) es **reproducible por cualquiera** — no es un número que haya que
+creerse. El dataset de evaluación (206 pares de un claim-ledger real de
+crossplane) y el script viven en `evaluation/`:
+
+```bash
+pip install -e ".[dev]"
+python evaluation/evaluate.py
+# AUC (NLI sobre pasaje recuperado) = 0.7219
+```
+
+El script usa el mismo pipeline que la librería (label NLI por nombre,
+retrieve híbrido) y el mismo dataset que originó el número.
+
 ## Licencia
 
 [AGPL-3.0-or-later](LICENSE) — Copyright (C) 2026 Pedro Sordo Martínez
 (amurlaniakea@gmail.com).
+
+**Nota AGPL (servicio de red):** la AGPL exige que si este software se ofrece
+como servicio de red (no solo como librería/CLI local), los usuarios remotos
+puedan acceder al código fuente correspondiente. Hoy citefid es CLI/librería
+(y el fuente ya es público en este repo), así que no aplica de forma práctica;
+pero si en el futuro se expone como servicio, el README/endpoint debe enlazar
+explícitamente a este repositorio como fuente.

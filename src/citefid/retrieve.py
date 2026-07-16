@@ -4,6 +4,23 @@ Localiza el párrafo del span donde el claim podría confirmarse/refutarse.
 Híbrido: keyword primero (tokens no-stopword del claim), embeddings (MiniLM)
 como tie-break. NUNCA devuelve span[:1500] como premise.
 """
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Copyright (C) 2026 Pedro Sordo Martínez <amurlaniakea@gmail.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public
+# License along with this program. If not, see
+# <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
 import re
@@ -68,10 +85,20 @@ def retrieve_embeddings(claim: str, paras: List[str], model) -> int:
 
 
 def retrieve_passage(claim: str, span: str, model=None) -> str:
-    """Recupera el párrafo relevante. keyword primero, embeddings como tie-break."""
+    """Recupera el párrafo relevante. keyword primero, embeddings como tie-break.
+
+    NOTA (robustez, Fase 2): si `paragraphs(span)` queda vacío (span que es
+    SOLO frontmatter YAML, el caso que causó el AUC falso de 0.92 en el
+    spike), el fallback devuelve `span[:1500]`. Ese fallback es DEGRADADO:
+    equivale al patrón peligroso que trunca y puede engañar a NLI. Un span
+    resuelto de verdad rara vez es solo frontmatter, pero quien llame a esta
+    función debe saber que NO se recuperó un párrafo real en ese caso.
+    """
     paras = paragraphs(span)
     if not paras:
-        return span[:1500]  # doc muy corto: usa todo, marcado en caller
+        # FALLBACK DEGRADADO: span sin párrafos útiles (p.ej. solo frontmatter).
+        # No se recuperó pasaje real; NLI sobre esto puede dar score engañoso.
+        return span[:1500]
     ki = retrieve_keyword(claim, paras)
     if ki is not None:
         return paras[ki]  # keyword desempató
