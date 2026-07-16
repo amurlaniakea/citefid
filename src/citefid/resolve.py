@@ -70,8 +70,11 @@ def _resolve_code(raw: str) -> Evidence:
         return Evidence(raw=raw, resolved_path=fpath, span=content, span_kind="doc")
     # líneas 1-indexed -> 0-indexed
     lo = max(0, start - 1)
-    # Python clampa el slice solo: lines[lo:hi] con hi>len(lines) llega al final.
-    hi = end if end is not None else len(lines)
+    # Clamping explícito: hi en [lo, len(lines)] para que el slice nunca se
+    # invierta ni se salga de rango. Python ya clampa el slice, pero lo hacemos
+    # explícito para que el analizador estático no infiera condiciones always-true.
+    hi = min(end, len(lines)) if end is not None else len(lines)
+    hi = max(hi, lo)
     span = "\n".join(lines[lo:hi])
     return Evidence(raw=raw, resolved_path=fpath, span=span, span_kind="lines")
 
