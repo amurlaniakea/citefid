@@ -75,7 +75,9 @@ def _resolve_code(raw: str) -> Evidence:
     # explícito para que el analizador estático no infiera condiciones always-true.
     hi = min(end, len(lines)) if end is not None else len(lines)
     hi = max(hi, lo)
-    span = "\n".join(lines[lo:hi])  # NOSONAR S2583: falso positivo — el slice lines[lo:hi] es siempre válido (Python clampa); span vacío es correcto para rango inválido.
+    # NOSONAR S2583: falso positivo confirmado. El slice lines[lo:hi] es siempre
+    # válido (Python clampa el índice); un span vacío es correcto para rango inválido.
+    span = "\n".join(lines[lo:hi])
     return Evidence(raw=raw, resolved_path=fpath, span=span, span_kind="lines")
 
 
