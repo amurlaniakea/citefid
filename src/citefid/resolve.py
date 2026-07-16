@@ -70,7 +70,8 @@ def _resolve_code(raw: str) -> Evidence:
         return Evidence(raw=raw, resolved_path=fpath, span=content, span_kind="doc")
     # líneas 1-indexed -> 0-indexed
     lo = max(0, start - 1)
-    hi = len(lines) if end is None else min(len(lines), end)
+    # Python clampa el slice solo: lines[lo:hi] con hi>len(lines) llega al final.
+    hi = end if end is not None else len(lines)
     span = "\n".join(lines[lo:hi])
     return Evidence(raw=raw, resolved_path=fpath, span=span, span_kind="lines")
 
