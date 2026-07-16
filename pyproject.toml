@@ -28,6 +28,7 @@ dev = [
 where = ["src"]
 
 [tool.pytest.ini_options]
+pythonpath = ["src"]
 testpaths = ["tests"]
 markers = [
     "slow: tests that hit network or external APIs (skip without credentials)",
