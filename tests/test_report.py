@@ -1,9 +1,8 @@
 """T010 — report.py: CSV/JSON por-evidencia, determinista."""
-import json
 from pathlib import Path
 
-from src.citefid.models import Claim, Evidence, Verdict
-from src.citefid.report import write_csv, write_json, verdicts_to_rows
+from src.citefid.models import Verdict
+from src.citefid.report import verdicts_to_rows, write_csv, write_json
 
 OUT = Path(__file__).parent.parent / "out_test"
 OUT.mkdir(exist_ok=True)

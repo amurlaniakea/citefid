@@ -10,7 +10,6 @@ from pathlib import Path
 from sentence_transformers import CrossEncoder
 
 from src.citefid.models import Claim, Evidence
-from src.citefid.resolve import resolve_citation
 from src.citefid.verify import verify_claim
 
 FIX = Path(__file__).parent / "fixtures"

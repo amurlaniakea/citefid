@@ -9,7 +9,7 @@ import json
 from pathlib import Path
 from typing import List
 
-from .models import Claim, Verdict
+from .models import Verdict
 
 
 def verdicts_to_rows(verdicts: List[Verdict]) -> List[dict]:

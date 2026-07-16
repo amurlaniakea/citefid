@@ -1,7 +1,7 @@
 """T005/T006/T007 — retrieve.py: keyword, embeddings tie-break, contiene el hecho."""
 from pathlib import Path
 
-from src.citefid.retrieve import retrieve_passage, retrieve_keyword, paragraphs
+from src.citefid.retrieve import paragraphs, retrieve_keyword, retrieve_passage
 
 FIX = Path(__file__).parent / "fixtures"
 REF_DIR = FIX / "references"

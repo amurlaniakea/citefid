@@ -26,10 +26,10 @@ def paragraphs(text: str) -> List[str]:
     out = []
     for p in raw:
         # saltar párrafos que son solo metadatos (title:/source:/etc.)
-        lines = [l for l in p.splitlines() if l.strip()]
+        lines = [ln for ln in p.splitlines() if ln.strip()]
         if not lines:
             continue
-        if all(re.match(r"^[A-Za-z_-]+:", l) for l in lines[:3]):
+        if all(re.match(r"^[A-Za-z_-]+:", ln) for ln in lines[:3]):
             continue  # bloque de metadatos, no contenido
         if len(p) > 40:
             out.append(p)
