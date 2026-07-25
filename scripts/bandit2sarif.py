@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Pedro Sordo Martínez <amurlaniakea@gmail.com>
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 #!/usr/bin/env python
 """Convierte bandit JSON -> SARIF 2.1.0 (dependency-free).
 
