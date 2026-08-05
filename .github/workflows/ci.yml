@@ -25,6 +25,7 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Tests
         run: pytest --cov=src/citefid --cov-report=xml -q
       - name: Upload coverage
